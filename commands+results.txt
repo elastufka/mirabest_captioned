@@ -1,0 +1,39 @@
+python finetune_image_text.py --lr 0.000025 --epochs 50 --output_dir ./vision_only --vision_only --niter 100 --linear_lr 0.01 
+
+
+#[Test set evaluation] Image classification probe: acc=0.9115, f1=0.9170, loss=0.1379,
+ Text classification probe: acc=0.9115, f1=0.9170, loss=0.1382
+ Concatenated Image-Text classification probe: acc=0.8750, f1=0.8785, loss=0.1082
+ Averaged Image-Text classification probe: acc=0.8827, f1=0.8909, loss=0.1808
+ mean image-text cosine similarity: 0.1262, recall@1: 0.0337, topK: 0.1298
+ class-level recall!@1: 0.6635, vision knn-classifier accuracy: 0.8654, vision knn-classifier F1: 0.8641, text knn-classifier accuracy: 0.6923, text knn-classifier F1: 0.6894, cat image-text knn-classifier f1: 0.8263, avg image-text knn-classifier F1: 0.8065
+
+python finetune_image_text.py --lr 0.000025 --epochs 50 --output_dir ./language_only --language_only --niter 100 --linear_lr 0.01 
+
+#[Test set evaluation] Image classification probe: acc=0.9010, f1=0.9066, loss=0.2636,
+ Text classification probe: acc=0.9029, f1=0.9081, loss=0.2557
+ Concatenated Image-Text classification probe: acc=0.8587, f1=0.8696, loss=0.1683
+ Averaged Image-Text classification probe: acc=0.8077, f1=0.8182, loss=0.2497
+ mean image-text cosine similarity: 0.1289, recall@1: 0.0337, topK: 0.2260
+ class-level recall!@1: 0.6923, vision knn-classifier accuracy: 0.8077, vision knn-classifier F1: 0.8051, text knn-classifier accuracy: 0.7308, text knn-classifier F1: 0.7299, cat image-text knn-classifier f1: 0.7398, avg image-text knn-classifier F1: 0.7787
+
+
+python finetune_image_text.py --lr 0.000005 --epochs 50 --output_dir ./language_only-blind --language_only --niter 100 --linear_lr 0.01 --train_captions  /mnt/c/Users/elast/Documents/scratch/MiraBest/gemini_train_captions_blind.csv --test_captions /mnt/c/Users/elast/Documents/scratch/MiraBest/gemini_test_captions_blind.csv
+
+#[Test set evaluation] Image classification probe: acc=0.8942, f1=0.9043, loss=0.1727,
+ Text classification probe: acc=0.8942, f1=0.9043, loss=0.1753
+ Concatenated Image-Text classification probe: acc=0.8673, f1=0.8787, loss=0.1322
+ Averaged Image-Text classification probe: acc=0.9038, f1=0.9107, loss=0.2232
+ mean image-text cosine similarity: 0.1331, recall@1: 0.1154, topK: 0.3606
+ class-level recall!@1: 0.7788, vision knn-classifier accuracy: 0.8654, vision knn-classifier F1: 0.8636, text knn-classifier accuracy: 0.7115, text knn-classifier F1: 0.7098, cat image-text knn-classifier f1: 0.8649, avg image-text knn-classifier F1: 0.9134
+
+python finetune_image_text.py --lr 0.000025 --epochs 50 --output_dir ./vision_only-blind --vision_only --niter 100 --linear_lr 0.01 --train_captions  /mnt/c/Users/elast/Documents/scratch/MiraBest/gemini_train_captions_blind.csv --test_captions /mnt/c/Users/elast/Documents/scratch/MiraBest/gemini_test_captions_blind.csv
+
+#[Test set evaluation] Image classification probe: acc=0.8798, f1=0.8869, loss=0.2758,
+ Text classification probe: acc=0.8817, f1=0.8885, loss=0.2736
+ Concatenated Image-Text classification probe: acc=0.8538, f1=0.8628, loss=0.1849
+ Averaged Image-Text classification probe: acc=0.8462, f1=0.8519, loss=0.2728
+ mean image-text cosine similarity: 0.1336, recall@1: 0.0865, topK: 0.3702
+ class-level recall!@1: 0.7404, vision knn-classifier accuracy: 0.8077, vision knn-classifier F1: 0.8051, text knn-classifier accuracy: 0.8173, text knn-classifier F1: 0.8165, cat image-text knn-classifier f1: 0.8652, avg image-text knn-classifier F1: 0.8654
+
+python finetune_image_text.py --lr 0.000005 --epochs 50 --output_dir ./siglip2-finetuned-lora-blind --niter 100 --linear_lr 0001 --train_captions  /mnt/c/Users/elast/Documents/scratch/MiraBest/gemini_train_captions_blind.csv --test_captions /mnt/c/Users/elast/Documents/scratch/MiraBest/gemini_test_captions_blind.csv
