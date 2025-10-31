@@ -280,6 +280,8 @@ def evaluate_classification_similarity(model, val_dataset, device, processor, ba
         tkacc, tkf1 = knn_classification_probe_train_test(ddict["train_all_txt_feats"],ddict["val_all_txt_feats"], ddict["train_all_labels"],ddict["val_all_labels"], k=5)
         catkacc, catkf1 = knn_classification_probe_train_test(train_cat_feats, val_cat_feats, ddict["train_all_labels"],ddict["val_all_labels"], k=5)
         avgkacc, avgkf1 = knn_classification_probe_train_test(train_avg_feats, val_avg_feats, ddict["train_all_labels"],ddict["val_all_labels"], k=5)
+        vtrain_test_feats = torch.cat((ddict["train_all_feats"], ddict["val_all_feats"]),dim=0)
+        ttrain_test_feats = torch.cat((ddict["train_all_txt_feats"], ddict["val_all_txt_feats"]),dim=0)
     else: 
         accuracy, f1, loss = linear_probe(all_feats, all_labels, niter=niter, lr=linear_lr)
         txt_acc, txt_f1, loss_txt = linear_probe(all_txt_feats, all_labels, niter=niter, lr=linear_lr)
@@ -288,6 +290,8 @@ def evaluate_classification_similarity(model, val_dataset, device, processor, ba
         #print(torch.mean(torch.stack((all_txt_feats, all_feats)),dim=0).shape)
         val_avg_feats =  torch.mean(torch.stack((ddict["val_all_txt_feats"], ddict["val_all_feats"])),dim=0)
         avg_acc, avg_f1, avg_loss = linear_probe(val_avg_feats, all_labels, niter=niter, lr=linear_lr)
+        vtrain_test_feats = torch.cat((all_feats, ddict["val_all_feats"]),dim=0)
+        ttrain_test_feats = torch.cat((all_txt_feats,ddict["val_all_txt_feats"]),dim=0)
 
         vkacc, vkf1 = knn_classification_probe(img_embeds_all, all_labels, k=5) #do this for train/test too? or is it fine with just test?
         tkacc, tkf1 = knn_classification_probe(txt_embeds_all, all_labels, k=5)
@@ -302,7 +306,7 @@ def evaluate_classification_similarity(model, val_dataset, device, processor, ba
     recall1_class_level = evaluate_class_level_recall1(img_embeds_all, txt_embeds_all, all_labels, all_labels)
 
     if save_features:
-        return all_feats.numpy(), all_txt_feats.numpy(), accuracy, f1, loss.item(), txt_acc, txt_f1, loss_txt.item(),cat_acc, cat_f1, cat_loss.item(), avg_acc, avg_f1, avg_loss.item(), mean_sim, std_sim, recall1, topk_recall, recall1_class_level, vkacc, vkf1, tkacc, tkf1, catkf1, avgkf1
+        return vtrain_test_feats.numpy(), ttrain_test_feats.numpy(), accuracy, f1, loss.item(), txt_acc, txt_f1, loss_txt.item(),cat_acc, cat_f1, cat_loss.item(), avg_acc, avg_f1, avg_loss.item(), mean_sim, std_sim, recall1, topk_recall, recall1_class_level, vkacc, vkf1, tkacc, tkf1, catkf1, avgkf1
     else:
         return accuracy, f1, loss.item(), txt_acc, txt_f1, loss_txt.item(),cat_acc, cat_f1, cat_loss.item(), avg_acc, avg_f1, avg_loss.item(), mean_sim, std_sim, recall1, topk_recall, recall1_class_level, vkacc, vkf1, tkacc, tkf1, catkf1, avgkf1
 
@@ -582,9 +586,10 @@ def main(args):
     trainer.train()
     if args.vision_only:
         model.vision_model.save_pretrained(args.output_dir)
-    if args.language_only:
+    elif args.language_only:
         model.text_model.save_pretrained(args.output_dir)
-    model.save_pretrained(args.output_dir)
+    else:
+        model.save_pretrained(args.output_dir)
     imfeats, textfeats, acc, f1, loss, txt_acc, txt_f1, txt_clf_loss,cat_acc, cat_f1, cat_loss, avg_acc, avg_f1, avg_loss, mean_sim, std_sim, recall1, topk_recall,recall1_class_level, vkacc, vkf1, tkacc, tkf1, catkf1, avgkf1 = evaluate_classification_similarity(model, test_ds, device=model.device, processor=processor, save_features=True,niter=args.niter, linear_lr=args.linear_lr, train_dataset=train_full_ds)
     np.save(f"{os.path.join(args.output_dir, 'image_features.npy')}",imfeats.squeeze())
     np.save(f"{os.path.join(args.output_dir, 'text_features.npy')}",textfeats.squeeze())
@@ -657,7 +662,7 @@ def evaluate_model(args):
         MBFRConfident(args.data_path, train=False), processor, args.test_captions, transform=val_transform, labels=True
     )
 
-    acc, f1, loss, txt_acc, txt_f1, txt_clf_loss,cat_acc, cat_f1, cat_loss, avg_acc, avg_f1, avg_loss, mean_sim, std_sim, recall1, topk_recall,recall1_class_level, vkacc, vkf1, tkacc, tkf1, catkf1, avgkf1 = evaluate_classification_similarity(model, test_ds, device=model.device, processor=processor, niter=args.niter, linear_lr=args.linear_lr, train_dataset=train_full_ds)
+    imfeats, textfeats, acc, f1, loss, txt_acc, txt_f1, txt_clf_loss,cat_acc, cat_f1, cat_loss, avg_acc, avg_f1, avg_loss, mean_sim, std_sim, recall1, topk_recall,recall1_class_level, vkacc, vkf1, tkacc, tkf1, catkf1, avgkf1 = evaluate_classification_similarity(model, test_ds, device=model.device, processor=processor, niter=args.niter, linear_lr=args.linear_lr, train_dataset=train_full_ds, save_features=True)
 
     print(f"[Test set evaluation] Image classification probe: acc={acc:.4f}, f1={f1:.4f}, loss={loss:.4f},\n Text classification probe: acc={txt_acc:.4f}, f1={txt_f1:.4f}, loss={txt_clf_loss:.4f} \n Concatenated Image-Text classification probe: acc={cat_acc:.4f}, f1={cat_f1:.4f}, loss={cat_loss:.4f} \n Averaged Image-Text classification probe: acc={avg_acc:.4f}, f1={avg_f1:.4f}, loss={avg_loss:.4f} \n mean image-text cosine similarity: {mean_sim:.4f}, recall@1: {recall1:.4f}, topK: {topk_recall:.4f} \n class-level recall!@1: {recall1_class_level:.4f}, vision knn-classifier accuracy: {vkacc:.4f}, vision knn-classifier F1: {vkf1:.4f}, text knn-classifier accuracy: {tkacc:.4f}, text knn-classifier F1: {tkf1:.4f}, cat image-text knn-classifier f1: {catkf1:.4f}, avg image-text knn-classifier F1: {avgkf1:.4f}")
 
@@ -668,9 +673,12 @@ def evaluate_model(args):
     df["linear lr"] = args.linear_lr
     df.to_csv(os.path.join(args.output_dir,"test_metrics.csv"))
 
+    np.save(f"{os.path.join(args.output_dir, 'image_features.npy')}",imfeats.squeeze())
+    np.save(f"{os.path.join(args.output_dir, 'text_features.npy')}",textfeats.squeeze())
+
 def get_args():
     parser = argparse.ArgumentParser(description="Fine-tune SigLIP2 with LoRA using Hugging Face Trainer")
-    parser.add_argument("--data_path", type=str, default="/home/glados/unix-Documents/AstroSignals/llm_decoder/data/mirabest", help="Path to training CSV file")
+    parser.add_argument("--data_path", type=str, default="/home/glados/unix-Documents/AstroSignals/llm_decoder/data/MiraBest", help="Path to training CSV file")
     #parser.add_argument("--valid_csv", type=str, required=True, help="Path to validation CSV file")
     parser.add_argument("--train_captions", type=str, default="/mnt/c/Users/elast/Documents/scratch/MiraBest/gemini_captions_train.csv", help="Column name for image paths")
     parser.add_argument("--test_captions", type=str, default="/mnt/c/Users/elast/Documents/scratch/MiraBest/gemini_captions_test.csv", help="Column name for text")
